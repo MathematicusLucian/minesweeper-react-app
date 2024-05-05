@@ -1,5 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Game.css'
+
+// Constants
+const gridDataInit: any[] = [];
+const INITIAL_STATE = {
+    gameOver: false,
+    gameState: "Loading . . .",
+    gameWon: false,
+    gridData: gridDataInit,
+    height: 0,
+    mineCount: 0,
+    mineLocations: new Set(),
+    revealed: [],
+    width: 0
+};
 
 interface GridSquareProps {
     onClick: (index: any) => any;
@@ -121,6 +135,20 @@ const Grid = (props: GridProps) => {
         return Math.floor((Math.random() * 1000) + 1) % dimension;
     };
 
+    const plantMines = (data, height, width, mines) => {
+        let randomx, randomy, minesPlanted = 0;
+
+        while (minesPlanted < mines) {
+            randomx = getRandomNumber(width);
+            randomy = getRandomNumber(height);
+            if (!(data[randomx][randomy].isMine)) {
+                data[randomx][randomy].isMine = true;
+                minesPlanted++;
+            }
+        }
+        return (data);
+    };
+
     const getNeighbours = (data, height, width) => {
         let updatedData = data, index = 0;
 
@@ -144,32 +172,22 @@ const Grid = (props: GridProps) => {
         return (updatedData);
     };
 
-    const plantMines = (data, height, width, mines) => {
-        let randomx, randomy, minesPlanted = 0;
-
-        while (minesPlanted < mines) {
-            randomx = getRandomNumber(width);
-            randomy = getRandomNumber(height);
-            if (!(data[randomx][randomy].isMine)) {
-                data[randomx][randomy].isMine = true;
-                minesPlanted++;
-            }
-        }
-        return (data);
-    };
-
-    const initGridData = (height, width, mines) => {
+    const initGridData = (height, width, mines): any[] => {
         let data = createEmptyArray(height, width);
         data = plantMines(data, height, width, mines);
         data = getNeighbours(data, height, width);
         return data;
-    };
+    }; 
 
-    const [state, setState] = useState({
-        gridData: initGridData(height, width, mines),
-        gameStatus: "Game in progress",
-        mineCount: mines
-    });
+    const [state, setState] = React.useState(INITIAL_STATE);
+    useEffect(() => {
+        setState(prevState => ({
+            ...prevState, 
+                gridData: initGridData(height, width, mines),
+                gameState: "Game in progress",
+                mineCount: mines
+        }));
+    }, []);
     
     const getMines = (data) => {
         let mineArray: any[] = [];
@@ -243,7 +261,7 @@ const Grid = (props: GridProps) => {
         if (state.gridData[x][y].isMine) {
             setState(prevState => ({
                 ...prevState, 
-                gameStatus: "Game over."
+                gameState: "Game over."
             }));
             revealGrid();
             alert("Game over");
@@ -261,7 +279,7 @@ const Grid = (props: GridProps) => {
             }));
             setState(prevState => ({
                 ...prevState, 
-                gameStatus: "You win.."
+                gameState: "You win.."
             }));
             revealGrid();
             alert("You Win");
@@ -298,7 +316,7 @@ const Grid = (props: GridProps) => {
                 }));
                 setState(prevState => ({
                     ...prevState, 
-                    gameStatus: "You win.."
+                    gameState: "You win.."
                 }));
                 revealGrid();
                 alert("You Win");
@@ -317,7 +335,7 @@ const Grid = (props: GridProps) => {
     return (
         <div className="game-area">
             <div className="game-info">
-                <h1 className="info">{state.gameStatus}</h1>
+                <h1 className="info">{state.gameState}</h1>
                 <span className="info">Mines remaining: {state.mineCount}</span>
             </div>
             <div className="minefield">
