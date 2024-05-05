@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import './Game.css'
+import './Minesweeper.css'
 
 // Constants
 type Seed = [width: number, height: number, minesCount: 0]; //mineLocations: Set<number>];
@@ -294,32 +294,26 @@ const Grid = (props: {
     };
 
     return (
-        <div className="game-area">
-            <div className="game-info">
-                <span className="info">Grid: {state.height} x {state.width}</span>
-                <span className="info">Mines remaining: {state.minesCount}</span>
-            </div>
-            <div className="minefield">
-            {
-                state.gridData && state.gridData.map((datarow) => {
-                    return datarow.map((dataitem) => {
-                        return (
-                            <div key={dataitem.x * datarow.length + dataitem.y}>
-                                <GridSquare
-                                    onClick={() => _handleGridSquareClick(dataitem.x, dataitem.y)}
-                                    index={parseInt("0")}
-                                    value={dataitem}
-                                    cMenu={(e) => _handleContextMenu(e, dataitem.x, dataitem.y)}
-                                    isExplosive={false}
-                                    nearbyMinesCount={0}
-                                    uncovered={false}
-                                />
-                                {(datarow[datarow.length - 1] === dataitem) ? <div className="clear" /> : ""}
-                            </div>);
-                    });
-                })
-            }
-            </div>
+        <div className="minefield">
+        {
+            state.gridData && state.gridData.map((datarow) => {
+                return datarow.map((dataitem) => {
+                    return (
+                        <div key={dataitem.x * datarow.length + dataitem.y}>
+                            <GridSquare
+                                onClick={() => _handleGridSquareClick(dataitem.x, dataitem.y)}
+                                index={parseInt("0")}
+                                value={dataitem}
+                                cMenu={(e) => _handleContextMenu(e, dataitem.x, dataitem.y)}
+                                isExplosive={false}
+                                nearbyMinesCount={0}
+                                uncovered={false}
+                            />
+                            {(datarow[datarow.length - 1] === dataitem) ? <div className="clear" /> : ""}
+                        </div>);
+                });
+            })
+        }
         </div>
     );
 }
@@ -399,7 +393,7 @@ const GameOver = ({
 };
 
 // Game Component
-function Game(props) {  
+function Minesweeper(props) {  
     const [state, setState] = React.useState(INITIAL_STATE);
 
     const onStateChange = (newState: any) => {
@@ -413,13 +407,24 @@ function Game(props) {
     }
 
     return (
-        <div className="game">
-            <h1 className="info">{state.gameState}</h1>
+        <div id="minesweeper-main">
+            <h1 id="minesweeper-title">Minesweeper</h1>
+            <p className="info">{state.gameState}</p>
             <GameSeedInput 
                 state={state} 
                 defaultValue={"3,3,1"}
                 onStateChange={onStateChange}
             />
+            <div className="game-area">
+                {
+                    state.height && (
+                    <div className="game-info">
+                        <p className="info"><span className="heading">Grid:</span> {state.height} x {state.width}</p>
+                        <p className="info"><span className="heading">Mines remaining:</span> {state.minesCount}</p>
+                    </div>
+                    ) || (<span></span>)
+                }
+            </div>
             <Grid 
                 state={state}
                 onStateChange={onStateChange}
@@ -435,4 +440,4 @@ function Game(props) {
     );
 }
 
-export default Game
+export default Minesweeper
