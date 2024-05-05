@@ -17,42 +17,47 @@ const INITIAL_STATE = {
 };
 
 interface GridSquareProps {
-    cMenu: any;
+    contextMenu: any;
     /** The grid index of this square (ordinal) */
-    index: number;
+    key: any;
+    index: any[];
     /** Boolean indicating whether this square is mined or not */
     isExplosive: boolean;
+    isFlagged: any;
     /** The nearby mines count to display */
     nearbyMinesCount: number;
+    neighbour: any;
     /** Boolean indicating whether this square has been uncovered */
-    uncovered: boolean;
-    value: any;
+    isUncovered: boolean;
+    // value: any;
     /** Callback fired when this grid square is clicked */
     onClick: (index: any) => any;
 }
 // GridSquare Component
 const GridSquare = (props: GridSquareProps) => {
-    const {onClick, index, value, cMenu} = props;
+    const {contextMenu, index, isExplosive, isFlagged, isUncovered, neighbour, onClick} = props;
+
+    console.log(props.isExplosive);
     
     const getClassName = (): string => {
         return "grid-square" +
-            (value.isRevealed ? "" : " is-hidden") +
-            (value.isMine ? " is-mine" : "") +
-            (value.isFlagged ? " is-flag" : "");
+            (isUncovered ? "" : " is-hidden") +
+            (isExplosive ? " is-mine" : "") +
+            (isFlagged ? " is-flag" : "");
     }
 
     const getValue = () => {
-        if (!value.isRevealed) return props.value.isFlagged ? "🚩" : null;
-        if (value.isMine) return "💣";
-        if (value.neighbour === 0) return null;
-        return value.neighbour;
+        if (!isUncovered) return isFlagged ? "🚩" : null;
+        if (isExplosive) return "💣";
+        if (neighbour === 0) return null;
+        return neighbour;
     };
 
     return (
         <div
             onClick={() => {onClick(index)}}
             className={getClassName()}
-            onContextMenu={cMenu}
+            onContextMenu={contextMenu}
         >
             {getValue()}
         </div>
@@ -65,6 +70,7 @@ const Grid = (props: {
     onStateChange: any
 }) => {
     const state = props.state;
+    // console.log('props', props);
 
     const createEmptyArray = (height, width) => {
         let data: any[] = [];
@@ -74,9 +80,9 @@ const Grid = (props: {
                 data[i][j] = {
                     x: i,
                     y: j,
-                    isMine: false,
+                    isExplosive: false,
                     neighbour: 0,
-                    isRevealed: false,
+                    isUncovered: false,
                     isEmpty: false,
                     isFlagged: false,
                 };
@@ -134,44 +140,50 @@ const Grid = (props: {
     const getRandomNumber = (dimension) => Math.floor((Math.random() * 1000) + 1) % dimension;
 
     const plantMines = (data, height, width, minesCount) => {
-        let randomx, randomy, minesPlanted = 0;
+        let randomX, randomY, minesPlanted = 0;
         while (minesPlanted < minesCount) {
-            randomx = getRandomNumber(width);
-            randomy = getRandomNumber(height);
-            if (!(data[randomx][randomy].isMine)) {
-                data[randomx][randomy].isMine = true;
+            randomX = getRandomNumber(width);
+            randomY = getRandomNumber(height);
+            if (!(data[randomX][randomY].isExplosive)) {
+                data[randomX][randomY].isExplosive = true;
                 minesPlanted++;
             }
         }
         return (data);
     };
 
-    const calculateMinesNeighbouring = (data, height, width) => {
-        let grid = data, index = 0;
-        for (let i = 0; i < height; i++) {
-            for (let j = 0; j < width; j++) {
-                if (data[i][j].isMine !== true) {
-                    let mine = 0;
-                    const area = traverseGrid(data[i][j].x, data[i][j].y, data);
-                    area.map((value: any) => {
-                        if (value.isMine) mine++;
-                    });
-                    if (mine === 0) grid[i][j].isEmpty = true;
-                    grid[i][j].neighbour = mine;
+    const nearbyMinesCount = (index: any[]) => {
+        const [height, width] = index;
+        if(state && state.dataGrid) {
+            let grid = state.dataGrid[width][height];
+            let gridcopy = grid;
+            for (let i = 0; i < height; i++) {
+                for (let j = 0; j < width; j++) {
+                    if (grid[i][j].isExplosive !== true) {
+                        let mine = 0;
+                        const area = traverseGrid(grid[i][j].x, grid[i][j].y, grid);
+                        area.map((value: any) => {
+                            if (value.isExplosive) mine++;
+                        });
+                        if (mine === 0) gridcopy[i][j].isEmpty = true;
+                        gridcopy[i][j].neighbour = mine;
+                    }
                 }
             }
+            return (gridcopy);
+        } else {
+            return 0;
         }
-        return (grid);
     };
     
     const getMines = (data) => {
-        let mineArray: any[] = [];
+        let mines: any[] = [];
         data.map(datarow => {
             datarow.map((dataitem: any) => {
-                if (dataitem.isMine) mineArray.push(dataitem);
+                if (dataitem.isExplosive) mines.push(dataitem);
             });
         });
-        return mineArray;
+        return mines;
     };
 
     const getFlags = (data) => {
@@ -188,7 +200,7 @@ const Grid = (props: {
         let hiddenSquares: any[] = [];
         data.map(datarow => {
             datarow.map((dataitem) => {
-                if (!dataitem.isRevealed)  hiddenSquares.push(dataitem);
+                if (!dataitem.isUncovered)  hiddenSquares.push(dataitem);
             });
         });
         return hiddenSquares;
@@ -197,7 +209,7 @@ const Grid = (props: {
     const revealGrid = () => {
         let updatedData = state.gridData;
         updatedData.map((datarow) => {
-            datarow.map((dataitem) => dataitem.isRevealed = true);
+            datarow.map((dataitem) => dataitem.isUncovered = true);
         });
         props.onStateChange({
             gridData: updatedData
@@ -206,8 +218,8 @@ const Grid = (props: {
 
     const revealEmpty = (x, y, data) => {
         traverseGrid(x, y, data).map(value => {
-            if (!value.isFlagged && !value.isRevealed && (value.isEmpty || !value.isMine)) {
-                data[value.x][value.y].isRevealed = true;
+            if (!value.isFlagged && !value.isUncovered && (value.isEmpty || !value.isExplosive)) {
+                data[value.x][value.y].isUncovered = true;
                 if (value.isEmpty) revealEmpty(value.x, value.y, data);
             }
         });
@@ -217,7 +229,7 @@ const Grid = (props: {
     const _initGridData = (height, width, minesCount): any[] => {
         let data = createEmptyArray(height, width);
         data = plantMines(data, height, width, minesCount);
-        data = calculateMinesNeighbouring(data, height, width);
+        data = nearbyMinesCount([width, height]);
         return data;
     }; 
 
@@ -234,58 +246,62 @@ const Grid = (props: {
         if(state.gameState=='start') _startGame();
     },[state]);
     
-    const _handleGridSquareClick = (x, y) => {
-        if (state.gridData[x][y].isRevealed || state.gridData[x][y].isFlagged) return null;
-        if (state.gridData[x][y].isMine) {
+    const _handleGridSquareClick = (index) => {
+        let x = index[0];
+        let y = index[1];
+        if (state.gameOver || state.gameWon || state.gridData[x][y].isUncovered || state.gridData[x][y].isFlagged) return null; // state.revealed.includes(index)
+        if (state.gridData[x][y].isExplosive) { // state.mineLocations.has(index))
             props.onStateChange({
-                gameState: "Game over."
+                gameState: "Game over",
+                gameOver: true
             });
             revealGrid();
             alert("Game over");
         }
         let updatedData = state.gridData;
         updatedData[x][y].isFlagged = false;
-        updatedData[x][y].isRevealed = true;
+        updatedData[x][y].isUncovered = true;
+        // else { revealSquare(index);
         if (updatedData[x][y].isEmpty) updatedData = revealEmpty(x, y, updatedData);
         if (determineHiddenSquares(updatedData).length === state.minesCount) {
             props.onStateChange({ 
                 minesCount: 0,
-                gameState: "You win.."
+                gameState: "You win",
+                gameWon: true
             });
             revealGrid();
-            alert("You Win");
         }
         props.onStateChange({
-            gridData: updatedData
-        });
-        props.onStateChange({
+            gridData: updatedData,
             minesCount: state.minesCount - getFlags(updatedData).length
         });
     };
 
-    const _handleContextMenu = (e, x, y) => {
+    const _handleContextMenu = (e, index) => {
         e.preventDefault();
+        let x = index[0];
+        let y = index[1];
         let updatedData = state.gridData;
         let mines = state.minesCount;
-        if (updatedData[x][y].isRevealed) return;
+        if (updatedData[x][y].isUncovered) return;
         if (updatedData[x][y].isFlagged) {
-                updatedData[x][y].isFlagged = false;
-                mines++;
+            updatedData[x][y].isFlagged = false;
+            mines++;
         } else {
-                updatedData[x][y].isFlagged = true;
-                mines--;
+            updatedData[x][y].isFlagged = true;
+            mines--;
         }
         if (mines === 0 || isNaN(mines)) {
-                const mineArray = getMines(updatedData);
-                const FlagArray = getFlags(updatedData);
-                if (JSON.stringify(mineArray) === JSON.stringify(FlagArray)) {
-                    props.onStateChange({
-                        minesCount: 0,
-                        gameState: "You win.."
-                    });
-                    revealGrid();
-                    alert("You Win");
-                }
+            const mineArray = getMines(updatedData);
+            const FlagArray = getFlags(updatedData);
+            if (JSON.stringify(mineArray) === JSON.stringify(FlagArray)) {
+                props.onStateChange({
+                    minesCount: 0,
+                    gameState: "You win",
+                    gameWon: true
+                });
+                revealGrid();
+            }
         } ;
         props.onStateChange({
             minesCount: mines,
@@ -293,27 +309,32 @@ const Grid = (props: {
         });
     };
 
+    const isStateLoaded = () => {
+        console.log(props.state.length);
+        return props.state.length>1;
+    }
+    const generateKey = (index: any[]) => 
+        index[0] * props.state.width + index[1];
+    const isFlagged = (index: any[]) => 
+        props.state && props.state.gridData && props.state.gridData.length > 0 ? props.state.gridData[index[0]][index[1]].isFlagged : false;
+    const isNeighbour = (index: any[]) => 
+        props.state && props.state.gridData && props.state.gridData.length > 0 ? props.state.gridData[index[0]][index[1]].isFlagged : false;
+    const isUncovered = (index: any[]) => 
+        props.state && props.state.gridData && props.state.gridData.length > 0 ? props.state.gridData[index[0]][index[1]].isRevealed.includes(index) : false;
+    const isExplosive = (index: any[]) => 
+        props.state && props.state.gridData && props.state.gridData.length > 0 ? props.state.gridData[index[0]][index[1]].mineLocations.has(index) : false;
+
     return (
-        <div className="minefield">
-        {
-            state.gridData && state.gridData.map((datarow) => {
-                return datarow.map((dataitem) => {
+        <div id="minefield" className="minefield" style={{ gridTemplateColumns: `repeat(${props.state.width}, 1fr)` }}>
+            {Array.from({ length: props.state.width}, (_, w_index) => 
+                Array.from({ length: props.state.height }, (_, h_index) => {     
                     return (
-                        <div key={dataitem.x * datarow.length + dataitem.y}>
-                            <GridSquare
-                                onClick={() => _handleGridSquareClick(dataitem.x, dataitem.y)}
-                                index={parseInt("0")}
-                                value={dataitem}
-                                cMenu={(e) => _handleContextMenu(e, dataitem.x, dataitem.y)}
-                                isExplosive={false}
-                                nearbyMinesCount={0}
-                                uncovered={false}
-                            />
-                            {(datarow[datarow.length - 1] === dataitem) ? <div className="clear" /> : ""}
-                        </div>);
-                });
-            })
-        }
+                        <span key={generateKey([w_index, h_index])}>
+                            {JSON.stringify(props.state)}
+                        </span>  
+                    )
+                })
+            )}
         </div>
     );
 }
@@ -346,7 +367,7 @@ const GameSeedInput = (props: GameSeedProps) => {
         ] as Seed;
     };
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) =>  setVal(e.target.value);
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => setVal(e.target.value);
 
     const handleSeedButtonClick = () => {
         let processed: Seed|null = processSeed(val);
@@ -392,7 +413,7 @@ const GameOver = ({
     );
 };
 
-// Game Component
+// Minesweeper Component
 function Minesweeper(props) {  
     const [state, setState] = React.useState(INITIAL_STATE);
 
@@ -403,8 +424,10 @@ function Minesweeper(props) {
     }
 
     const restartGame = () => {
-        console.log('restart');
-    }
+        setState(INITIAL_STATE);
+    };
+
+    console.log(state);
 
     return (
         <div id="minesweeper-main">
@@ -422,9 +445,10 @@ function Minesweeper(props) {
                         <p className="info"><span className="heading">Grid:</span> {state.height} x {state.width}</p>
                         <p className="info"><span className="heading">Mines remaining:</span> {state.minesCount}</p>
                     </div>
-                    ) || (<span></span>)
+                    ) || (<p className="info">^ Please start the game</p>)
                 }
             </div>
+            {/* {JSON.stringify(state)} */}
             <Grid 
                 state={state}
                 onStateChange={onStateChange}

@@ -69,9 +69,11 @@ body {
   text-align: left;
 }
 
-.game-area .game-info .info {
+.game-area .info {
   display: block;
   margin-top: 2px;
+  font-size: 0.9em;
+  color: #333333;
 }
 
 .game-area .game-info>.info>.heading {
