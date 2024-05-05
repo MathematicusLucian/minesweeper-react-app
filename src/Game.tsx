@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './Game.css'
 
 // Constants
+type Seed = [width: number, height: number, minesCount: 0]; //mineLocations: Set<number>];
 const gridDataInit: any[] = [];
 const INITIAL_STATE = {
     gameOver: false,
@@ -9,19 +10,28 @@ const INITIAL_STATE = {
     gameWon: false,
     gridData: gridDataInit,
     height: 0,
-    mineCount: 0,
-    mineLocations: new Set(),
+    minesCount: 0,
+    minesFoundCount: 0,
+//    mineLocations: new Set(),
     revealed: [],
     width: 0
 };
 
 interface GridSquareProps {
-    onClick: (index: any) => any;
-    index: number;
-    value: any;
     cMenu: any;
+    /** The grid index of this square (ordinal) */
+    index: number;
+    /** Boolean indicating whether this square is mined or not */
+    isExplosive: boolean;
+    /** The nearby mines count to display */
+    nearbyMinesCount: number;
+    /** Boolean indicating whether this square has been uncovered */
+    uncovered: boolean;
+    value: any;
+    /** Callback fired when this grid square is clicked */
+    onClick: (index: any) => any;
 }
-// GridSquare Class
+// GridSquare Component
 const GridSquare = (props: GridSquareProps) => {
     const {onClick, index, value, cMenu} = props;
     
@@ -57,14 +67,8 @@ const GridSquare = (props: GridSquareProps) => {
     );
 }
 
-// Grid Class
-interface GridProps {
-  height: number;
-  width: number;
-  mines: any;
-}
-const Grid = (props: GridProps) => {
-    const {height, width, mines} = props;
+// Grid Component
+const Grid = (state: any) => {
 
     const createEmptyArray = (height, width) => {
         let data: any[] = [];
@@ -94,7 +98,7 @@ const Grid = (props: GridProps) => {
         }
 
         // down
-        if (x < props.height - 1) {
+        if (x < state.height - 1) {
             el.push(data[x + 1][y]);
         }
 
@@ -104,7 +108,7 @@ const Grid = (props: GridProps) => {
         }
 
         // right
-        if (y < props.width - 1) {
+        if (y < state.width - 1) {
             el.push(data[x][y + 1]);
         }
 
@@ -114,17 +118,17 @@ const Grid = (props: GridProps) => {
         }
 
         // top right
-        if (x > 0 && y < props.width - 1) {
+        if (x > 0 && y < state.width - 1) {
             el.push(data[x - 1][y + 1]);
         }
 
         // bottom left
-        if (x < props.height - 1 && y > 0) {
+        if (x < state.height - 1 && y > 0) {
             el.push(data[x + 1][y - 1]);
         }
 
         // bottom right
-        if (x < props.height - 1 && y < props.width - 1) {
+        if (x < state.height - 1 && y < state.width - 1) {
             el.push(data[x + 1][y + 1]);
         }
 
@@ -179,14 +183,13 @@ const Grid = (props: GridProps) => {
         return data;
     }; 
 
-    const [state, setState] = React.useState(INITIAL_STATE);
     useEffect(() => {
-        setState(prevState => ({
-            ...prevState, 
-                gridData: initGridData(height, width, mines),
-                gameState: "Game in progress",
-                mineCount: mines
-        }));
+        // setState(prevState => ({
+        //     ...prevState, 
+        //         gridData: initGridData(state.height, state.width, state.mines),
+        //         gameState: "Game in progress",
+        //         minesFoundCount: state.minesCount
+        // }));
     }, []);
     
     const getMines = (data) => {
@@ -237,10 +240,10 @@ const Grid = (props: GridProps) => {
                 dataitem.isRevealed = true;
             });
         });
-        setState(prevState => ({
-            ...prevState, 
-            gridData: updatedData
-        }));
+        // setState(prevState => ({
+        //     ...prevState, 
+        //     gridData: updatedData
+        // }));
     };
 
     const revealEmpty = (x, y, data) => {
@@ -259,10 +262,10 @@ const Grid = (props: GridProps) => {
   const _handleGridSquareClick = (x, y) => {
         if (state.gridData[x][y].isRevealed || state.gridData[x][y].isFlagged) return null;
         if (state.gridData[x][y].isMine) {
-            setState(prevState => ({
-                ...prevState, 
-                gameState: "Game over."
-            }));
+            // setState(prevState => ({
+            //     ...prevState, 
+            //     gameState: "Game over."
+            // }));
             revealGrid();
             alert("Game over");
         }
@@ -272,32 +275,32 @@ const Grid = (props: GridProps) => {
         if (updatedData[x][y].isEmpty) {
             updatedData = revealEmpty(x, y, updatedData);
         }
-        if (getHidden(updatedData).length === props.mines) {
-            setState(prevState => ({
-                ...prevState, 
-                mineCount: 0
-            }));
-            setState(prevState => ({
-                ...prevState, 
-                gameState: "You win.."
-            }));
+        if (getHidden(updatedData).length === state.mines) {
+            // setState(prevState => ({
+            //     ...prevState, 
+            //     minesFoundCount: 0
+            // }));
+            // setState(prevState => ({
+            //     ...prevState, 
+            //     gameState: "You win.."
+            // }));
             revealGrid();
             alert("You Win");
         }
-        setState(prevState => ({
-            ...prevState, 
-            gridData: updatedData
-        }));
-        setState(prevState => ({
-            ...prevState, 
-            mineCount: props.mines - getFlags(updatedData).length
-        }));
+        // setState(prevState => ({
+        //     ...prevState, 
+        //     gridData: updatedData
+        // }));
+        // setState(prevState => ({
+        //     ...prevState, 
+        //     minesFoundCount: state.mines - getFlags(updatedData).length
+        // }));
   };
 
   const _handleContextMenu = (e, x, y) => {
       e.preventDefault();
       let updatedData = state.gridData;
-      let mines = state.mineCount;
+      let mines = state.minesFoundCount;
       if (updatedData[x][y].isRevealed) return;
       if (updatedData[x][y].isFlagged) {
             updatedData[x][y].isFlagged = false;
@@ -310,37 +313,37 @@ const Grid = (props: GridProps) => {
             const mineArray = getMines(updatedData);
             const FlagArray = getFlags(updatedData);
             if (JSON.stringify(mineArray) === JSON.stringify(FlagArray)) {
-                setState(prevState => ({
-                    ...prevState, 
-                    mineCount: 0
-                }));
-                setState(prevState => ({
-                    ...prevState, 
-                    gameState: "You win.."
-                }));
+                // setState(prevState => ({
+                //     ...prevState, 
+                //     minesFoundCount: 0
+                // }));
+                // setState(prevState => ({
+                //     ...prevState, 
+                //     gameState: "You win.."
+                // }));
                 revealGrid();
                 alert("You Win");
             }
       } ;
-        setState(prevState => ({
-            ...prevState, 
-            mineCount: mines
-        }));
-        setState(prevState => ({
-            ...prevState, 
-            gridData: updatedData
-        }));
+        // setState(prevState => ({
+        //     ...prevState, 
+        //     minesFoundCount: mines
+        // }));
+        // setState(prevState => ({
+        //     ...prevState, 
+        //     gridData: updatedData
+        // }));
     };
 
     return (
         <div className="game-area">
             <div className="game-info">
                 <h1 className="info">{state.gameState}</h1>
-                <span className="info">Mines remaining: {state.mineCount}</span>
+                <span className="info">Mines remaining: {state.minesCount}</span>
             </div>
             <div className="minefield">
                 {
-                    state.gridData.map((datarow) => {
+                    state.gridData && state.gridData.map((datarow) => {
                         return datarow.map((dataitem) => {
                             return (
                                 <div key={dataitem.x * datarow.length + dataitem.y}>
@@ -349,6 +352,9 @@ const Grid = (props: GridProps) => {
                                         index={parseInt("0")}
                                         value={dataitem}
                                         cMenu={(e) => _handleContextMenu(e, dataitem.x, dataitem.y)}
+                                        isExplosive={false}
+                                        nearbyMinesCount={0}
+                                        uncovered={false}
                                     />
                                     {(datarow[datarow.length - 1] === dataitem) ? <div className="clear" /> : ""}
                                 </div>);
@@ -360,13 +366,84 @@ const Grid = (props: GridProps) => {
     );
 }
 
-// Game Class
+// GameSeedInput Component
+interface GameSeedProps {
+    parentState: any, 
+    onStateChange: any
+}
+const GameSeedInput = (props: GameSeedProps) => {
+    const [val, setVal] = useState('');
+
+    const isNumeric = (str) => {
+        if (typeof str != "string") return false
+        return !isNaN(parseFloat(str)) 
+    };
+    
+    const processSeed = (seed: string): Seed|null => {
+        let splitSeed = seed.split(",");
+        if(splitSeed.length < 3) return null;
+        for(let s in splitSeed) {
+            if(!isNumeric(splitSeed[s])) return null;
+        }
+        const [width, height, ...mineIndices] = splitSeed;
+        return [
+            Number(width),
+            Number(height),
+            Number(mineIndices) // new Set<number>(mineIndices.map(Number)),
+        ] as Seed;
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) =>  setVal(e.target.value);
+
+    const handleSeedButtonClick = () => {
+        let processed: Seed|null = processSeed(val);
+        console.log(processed);
+        if(processed !== null) props.onStateChange(processed);
+    };
+
+    return (
+      <div id="game-seed-input">
+        <input
+          id="game-seed-input-input"
+          type="text"
+          onChange={handleInputChange}
+          placeholder={"Game Seed"}
+        />
+        <button
+          id="game-seed-input-button"
+          onClick={handleSeedButtonClick}
+        >
+          Play
+        </button>
+      </div>
+    );
+};
+
+// Game Component
 function Game(props) {  
-    const { height, width, mines } = { height: 3, width: 3, mines: 1 }; //props;
+    const [state, setState] = React.useState(INITIAL_STATE);
+    const onStateChange = (newState: any) => {
+        console.log(newState);
+        console.log(newState[0],newState[1],newState[2]);
+        setState(prevState => ({
+            ...prevState, 
+            gameState: 'start',
+            height: newState[0],
+            width: newState[1],
+            minesCount: newState[2]
+        }));
+        console.log(state);
+    }
 
     return (
         <div className="game">
-            <Grid height={height} width={width} mines={mines} />
+            <GameSeedInput 
+                parentState={state} 
+                onStateChange={onStateChange}
+            />
+            <Grid 
+                state={state}
+            />
         </div>
     );
 }
