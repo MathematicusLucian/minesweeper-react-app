@@ -6,7 +6,7 @@ type Seed = [width: number, height: number, minesCount: 0]; //mineLocations: Set
 const gridDataInit: any[] = [];
 const INITIAL_STATE = {
     gameOver: false,
-    gameState: "Please enter {width of grid, height, number of mines}, e.g. {3,3,1}:",
+    gameState: "Please enter { grid width , grid height , number of mines }, e.g. {3,3,1}:",
     gameWon: false,
     gridData: gridDataInit,
     height: 0,
@@ -334,7 +334,7 @@ const Grid = (props: {
             : false;
 
     return (
-        <div id="minefield" className="minefield" style={{ gridTemplateColumns: `repeat(${props.state.width}, 1fr)` }}>
+        <div id="minefield" className="minefield" style={{ width: (props.state.width * 47)+'px', gridTemplateColumns: `repeat(${props.state.width}, 1fr)` }}>
             {Array.from({ length: props.state.width}, (_, w_index) => 
                 Array.from({ length: props.state.height }, (_, h_index) => {     
                     return (
@@ -477,6 +477,7 @@ function Minesweeper(props) {
                 wonOrLost={state.gameWon ? "won" : "lost"}
               />
             )}
+            <p className="footnote">Nb. As the grid is setup in the browser, the minefield grid, and the locations of the mines can be found in the browser Web Inspector. I would suggest using an API to provide the response to a click on a grid square, and a session for the location of items on the grid.</p>
         </div>
     );
 }

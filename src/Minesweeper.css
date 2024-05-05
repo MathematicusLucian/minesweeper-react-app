@@ -81,22 +81,23 @@ body {
 }
 
 .minefield {
-  width: 100%;
-  text-align: center;
+  display: grid;
+  /* width: 100%; */
+  /* text-align: center; */
 }
 
 .grid-square {
-  background: #FCFAF9;
   border: 1px solid #48E5C2;
   border-radius: 4px;
-  float: left;
-  line-height: 45px;
-  height: 45px;
-  text-align: center;
-  width: 45px;
-  cursor: pointer;
+  background: #FCFAF9;
   color: #333333;
+  float: left;
+  height: 45px;
+  width: 45px;
+  text-align: center;
+  line-height: 45px;
   font-weight: 600;
+  cursor: pointer;
 }
 
 .grid-square &:focus {
@@ -110,4 +111,11 @@ body {
 #minesweeper-main .is-flag,
 #minesweeper-main .is-mine {
   color: #fc543c;
+}
+
+.footnote {
+  padding-top: 20px;
+  clear: both;
+  color: #333333;
+  font-size: 0.6em;
 }
