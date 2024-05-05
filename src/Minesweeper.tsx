@@ -28,23 +28,24 @@ interface GridSquareProps {
     nearbyMinesCount: number;
     neighbour: any;
     /** Boolean indicating whether this square has been uncovered */
-    revealed: boolean;
+    state: any;
+    uncovered: boolean;
     /** Callback fired when this grid square is clicked */
     onClick: (index: any) => any;
 }
 // GridSquare Component
 const GridSquare = (props: GridSquareProps) => {
-    const {contextMenu, index, isExplosive, isFlagged, revealed, neighbour, onClick} = props;
+    const {contextMenu, index, isExplosive, isFlagged, uncovered, neighbour, state, onClick} = props;
     
     const getClassName = (): string => {
         return "grid-square mine " +
-            (revealed ? "" : " is-hidden") +
+            (uncovered ? "" : " is-hidden") +
             (isExplosive ? " is-mine live" : "") +
             (isFlagged ? " is-flag" : "");
     }
 
     const getValue = () => {
-        if (!revealed) return isFlagged ? "🚩" : null;
+        if (!uncovered) return isFlagged ? "🚩" : null;
         return isExplosive ? "💥" : neighbour === 0 ? null : neighbour;
     };
 
@@ -61,7 +62,7 @@ const GridSquare = (props: GridSquareProps) => {
             id={`mine-overlay-${index}`}
             className="overlay"
             style={{
-              display: revealed ? "none" : undefined,
+              display: uncovered ? "none" : undefined,
             }}
           />
           <span id={`mine-nearby-count-${index}`} className="nearby-count">
@@ -276,6 +277,7 @@ const Grid = (props: {
     const _handleGridSquareClick = (index) => {
         let x = index[0];
         let y = index[1];
+        console.log(props, props.state.gridData);
         if (props.state.gameOver || props.state.gameWon || props.state.revealed.includes(generateKey(index)) || props.state.gridData[x][y].isFlagged) return null;
         if (props.state.gridData[x][y].isExplosive) { // state.mineLocations.has(index))
             props.onStateChange({
@@ -354,47 +356,34 @@ const Grid = (props: {
             ? props.state.mineLocations.has(index)
             : false;
 
-    // const mines = React.useMemo(() => {
-    //     let result = [] as React.ReactNode[];
-    //     for (let i = 0; i < height * width; i++) {
-    //       result.push(
-    //         <GridSquare
-    //           index={i}
-    //           key={i}
-    //           onClick={(_: number) => {
-    //             throw new Error("Function not implemented.");
-    //           }}
-    //           isExplosive={false}
-    //           uncovered={false}
-    //           nearbyMinesCount={0}
-    //         />
-    //       );
-    //     }
-    //     return result;
-    //   }, [height, width]);
+    const mines = React.useMemo(() => {
+        let result = Array.from({ length: props.state.width}, (_, w_index) => 
+            Array.from({ length: props.state.height }, (_, h_index) => {     
+                return (
+                    <GridSquare
+                        state = {props.state}
+                        onClick={() => _handleGridSquareClick([w_index, h_index])}
+                        index={[w_index, h_index]} // index={i}
+                        isFlagged={isFlagged([w_index, h_index])}
+                        key={generateKey([w_index, h_index])}
+                        contextMenu={(e) => _handleContextMenu(e, [w_index, h_index])}
+                        isExplosive={isExplosive(generateKey([w_index, h_index]))}
+                        nearbyMinesCount={nearbyMinesCount([w_index, h_index])}
+                        neighbour={isNeighbour([w_index, h_index])}
+                        uncovered={revealed([w_index, h_index])}
+                    /> 
+                )
+            })
+        ) as React.ReactNode[];
+        return result;
+      }, [props.state.height, props.state.width]);
 
     return (
         <div 
             id="minefield" className="minefield" 
             style={{ width: (props.state.width * 47)+'px', gridTemplateColumns: `repeat(${props.state.width}, 1fr)` }}
         >
-            {Array.from({ length: props.state.width}, (_, w_index) => 
-                Array.from({ length: props.state.height }, (_, h_index) => {     
-                    return (
-                        <GridSquare
-                            onClick={() => _handleGridSquareClick([w_index, h_index])}
-                            index={[w_index, h_index]}
-                            isFlagged={isFlagged([w_index, h_index])}
-                            key={generateKey([w_index, h_index])}
-                            contextMenu={(e) => _handleContextMenu(e, [w_index, h_index])}
-                            isExplosive={isExplosive(generateKey([w_index, h_index]))}
-                            nearbyMinesCount={nearbyMinesCount([w_index, h_index])}
-                            neighbour={isNeighbour([w_index, h_index])} // ?
-                            revealed={revealed([w_index, h_index])}
-                        /> 
-                    )
-                })
-            )}
+            {mines}
         </div>
     );
 }
