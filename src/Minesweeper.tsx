@@ -29,7 +29,6 @@ interface GridSquareProps {
     neighbour: any;
     /** Boolean indicating whether this square has been uncovered */
     revealed: boolean;
-    // value: any;
     /** Callback fired when this grid square is clicked */
     onClick: (index: any) => any;
 }
@@ -45,6 +44,7 @@ const GridSquare = (props: GridSquareProps) => {
     }
 
     const getValue = () => {
+        console.log(index, revealed, isExplosive, neighbour);
         if (!revealed) return isFlagged ? "🚩" : null;
         if (isExplosive) return "💣";
         if (neighbour === 0) return null;
@@ -145,7 +145,7 @@ const Grid = (props: {
             if (!(data[randomX][randomY].isExplosive)) {
                 data[randomX][randomY].isExplosive = true;
                 let mineLocations = props.state.mineLocations;
-                mineLocations.add(data[randomX][randomY].key);
+                mineLocations.add(generateKey([randomX, randomY]));
                 props.onStateChange({
                     mineLocations: mineLocations
                 });
@@ -345,6 +345,8 @@ const Grid = (props: {
             ? props.state.mineLocations.has(index)
             : false;
 
+    console.log(props.state.mineLocations);
+
     return (
         <div id="minefield" className="minefield" style={{ width: (props.state.width * 47)+'px', gridTemplateColumns: `repeat(${props.state.width}, 1fr)` }}>
             {Array.from({ length: props.state.width}, (_, w_index) => 
@@ -356,7 +358,7 @@ const Grid = (props: {
                             isFlagged={isFlagged([w_index, h_index])}
                             key={generateKey([w_index, h_index])}
                             contextMenu={(e) => _handleContextMenu(e, [w_index, h_index])}
-                            isExplosive={isExplosive([w_index, h_index])}
+                            isExplosive={isExplosive(generateKey([w_index, h_index]))}
                             nearbyMinesCount={nearbyMinesCount([w_index, h_index])}
                             neighbour={isNeighbour([w_index, h_index])} // ?
                             revealed={revealed([w_index, h_index])}
