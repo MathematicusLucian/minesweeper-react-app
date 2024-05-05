@@ -11,7 +11,7 @@ const INITIAL_STATE = {
     gridData: gridDataInit,
     height: 0,
     minesCount: 0,
-//    mineLocations: new Set(),
+    mineLocations: new Set(),
     revealed: [],
     width: 0
 };
@@ -36,8 +36,6 @@ interface GridSquareProps {
 // GridSquare Component
 const GridSquare = (props: GridSquareProps) => {
     const {contextMenu, index, isExplosive, isFlagged, revealed, neighbour, onClick} = props;
-
-    // console.log(props.isExplosive);
     
     const getClassName = (): string => {
         return "grid-square" +
@@ -69,8 +67,8 @@ const Grid = (props: {
     state: any,
     onStateChange: any
 }) => {
-    const state = props.state;
-    // console.log('props', props);
+
+    const generateKey = (index: any[]) => index[0] * props.state.width + index[1];
 
     const createEmptyArray = (height, width) => {
         let data: any[] = [];
@@ -100,7 +98,7 @@ const Grid = (props: {
         }
 
         // down
-        if (x < state.height - 1) {
+        if (x < props.state.height - 1) {
             el.push(data[x + 1][y]);
         }
 
@@ -110,7 +108,7 @@ const Grid = (props: {
         }
 
         // right
-        if (y < state.width - 1) {
+        if (y < props.state.width - 1) {
             el.push(data[x][y + 1]);
         }
 
@@ -120,17 +118,17 @@ const Grid = (props: {
         }
 
         // top right
-        if (x > 0 && y < state.width - 1) {
+        if (x > 0 && y < props.state.width - 1) {
             el.push(data[x - 1][y + 1]);
         }
 
         // bottom left
-        if (x < state.height - 1 && y > 0) {
+        if (x < props.state.height - 1 && y > 0) {
             el.push(data[x + 1][y - 1]);
         }
 
         // bottom right
-        if (x < state.height - 1 && y < state.width - 1) {
+        if (x < props.state.height - 1 && y < props.state.width - 1) {
             el.push(data[x + 1][y + 1]);
         }
 
@@ -146,6 +144,11 @@ const Grid = (props: {
             randomY = getRandomNumber(height);
             if (!(data[randomX][randomY].isExplosive)) {
                 data[randomX][randomY].isExplosive = true;
+                let mineLocations = props.state.mineLocations;
+                mineLocations.add(data[randomX][randomY].key);
+                props.onStateChange({
+                    mineLocations: mineLocations
+                });
                 minesPlanted++;
             }
         }
@@ -204,16 +207,18 @@ const Grid = (props: {
         let hiddenSquares: any[] = [];
         data.map(datarow => {
             datarow.map((dataitem) => {
-                if (!dataitem.revealed)  hiddenSquares.push(dataitem);
+                if (!props.state.revealed.includes(generateKey([dataitem.x, dataitem.y]))) hiddenSquares.push(dataitem);
             });
         });
         return hiddenSquares;
     };
 
     const revealGrid = () => {
-        let updatedData = state.gridData;
+        let updatedData = props.state.gridData;
         updatedData.map((datarow) => {
-            datarow.map((dataitem) => dataitem.revealed = true);
+            datarow.map((dataitem) => {
+                return revealSquare([dataitem.x, dataitem.y]);
+        });
         });
         props.onStateChange({
             gridData: updatedData
@@ -222,8 +227,9 @@ const Grid = (props: {
 
     const revealEmpty = (x, y, data) => {
         traverseGrid(x, y, data).map(value => {
-            if (!value.isFlagged && !value.revealed && (value.isEmpty || !value.isExplosive)) {
-                data[value.x][value.y].revealed = true;
+            let key = generateKey([value.x, value.y]);
+            if (!value.isFlagged && !props.state.revealed.includes(key) && (value.isEmpty || !value.isExplosive)) {
+                revealSquare([value.x, value.y]);
                 if (value.isEmpty) revealEmpty(value.x, value.y, data);
             }
         });
@@ -241,19 +247,28 @@ const Grid = (props: {
         props.onStateChange({
                 gridData: gridDataGenerated,
                 gameState: "Game in progress",
-                minesCount: state.minesCount
+                minesCount: props.state.minesCount
         });
-    }
+    };
+
+    const revealSquare = (index: any) => {
+        let r: any[] = props.state.revealed;
+        let key = generateKey(index);
+        r.push(key)
+        props.onStateChange({ 
+            revealed: r
+        });
+    };
     
     useEffect(() => {
-        if(state.gameState=='start') _startGame();
-    },[state]);
+        if(props.state.gameState=='start') _startGame();
+    },[props.state]);
     
     const _handleGridSquareClick = (index) => {
         let x = index[0];
         let y = index[1];
-        if (state.gameOver || state.gameWon || state.gridData[x][y].revealed || state.gridData[x][y].isFlagged) return null; // state.revealed.includes(index)
-        if (state.gridData[x][y].isExplosive) { // state.mineLocations.has(index))
+        if (props.state.gameOver || props.state.gameWon || props.state.revealed.includes(generateKey(index)) || props.state.gridData[x][y].isFlagged) return null;
+        if (props.state.gridData[x][y].isExplosive) { // state.mineLocations.has(index))
             props.onStateChange({
                 gameState: "Game over",
                 gameOver: true
@@ -261,12 +276,11 @@ const Grid = (props: {
             revealGrid();
             alert("Game over");
         }
-        let updatedData = state.gridData;
+        let updatedData = props.state.gridData;
         updatedData[x][y].isFlagged = false;
-        updatedData[x][y].revealed = true;
-        // else { revealSquare(index);
+        revealSquare(index);
         if (updatedData[x][y].isEmpty) updatedData = revealEmpty(x, y, updatedData);
-        if (determineHiddenSquares(updatedData).length === state.minesCount) {
+        if (determineHiddenSquares(updatedData).length === props.state.minesCount) {
             props.onStateChange({ 
                 minesCount: 0,
                 gameState: "You win",
@@ -276,7 +290,7 @@ const Grid = (props: {
         }
         props.onStateChange({
             gridData: updatedData,
-            minesCount: state.minesCount - getFlags(updatedData).length
+            minesCount: props.state.minesCount - getFlags(updatedData).length
         });
     };
 
@@ -284,9 +298,9 @@ const Grid = (props: {
         e.preventDefault();
         let x = index[0];
         let y = index[1];
-        let updatedData = state.gridData;
-        let mines = state.minesCount;
-        if (updatedData[x][y].revealed) return;
+        let updatedData = props.state.gridData;
+        let mines = props.state.minesCount;
+        if (props.state.revealed.includes(generateKey(index))) return;
         if (updatedData[x][y].isFlagged) {
             updatedData[x][y].isFlagged = false;
             mines++;
@@ -312,8 +326,6 @@ const Grid = (props: {
         });
     };
 
-    const generateKey = (index: any[]) => index[0] * props.state.width + index[1];
-
     const isFlagged = (index: any[]) => 
         props.state && props.state.gridData && props.state.gridData.length > 0 
         ? props.state.gridData[index[0]][index[1]].isFlagged 
@@ -323,8 +335,8 @@ const Grid = (props: {
 
     const revealed = (index: any[]) => 
         props.state && props.state.gridData && props.state.gridData.length > 0 
-            && props.state.revealed 
-            ? props.state.revealed.includes(index)
+            && props.state.revealed.length > 0 
+            ? props.state.revealed.includes(generateKey(index))
             : false;
 
     const isExplosive = (index: any[]) => 
@@ -444,8 +456,6 @@ function Minesweeper(props) {
         setState(INITIAL_STATE);
     };
 
-    // console.log(state);
-
     return (
         <div id="minesweeper-main">
             <h1 id="minesweeper-title">Minesweeper</h1>
@@ -477,7 +487,7 @@ function Minesweeper(props) {
                 wonOrLost={state.gameWon ? "won" : "lost"}
               />
             )}
-            <p className="footnote">Nb. As the grid is setup in the browser, the minefield grid, and the locations of the mines can be found in the browser Web Inspector. I would suggest using an API to provide the response to a click on a grid square, and a session for the location of items on the grid.</p>
+            <div className="footnote">Nb. As the grid is setup in the browser, the minefield grid, and the locations of the mines can be found in the browser Web Inspector. I would suggest using an API to provide the response to a click on a grid square, and a session for the location of items on the grid.</div>
         </div>
     );
 }
