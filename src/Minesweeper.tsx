@@ -28,26 +28,26 @@ interface GridSquareProps {
     nearbyMinesCount: number;
     neighbour: any;
     /** Boolean indicating whether this square has been uncovered */
-    isUncovered: boolean;
+    revealed: boolean;
     // value: any;
     /** Callback fired when this grid square is clicked */
     onClick: (index: any) => any;
 }
 // GridSquare Component
 const GridSquare = (props: GridSquareProps) => {
-    const {contextMenu, index, isExplosive, isFlagged, isUncovered, neighbour, onClick} = props;
+    const {contextMenu, index, isExplosive, isFlagged, revealed, neighbour, onClick} = props;
 
     // console.log(props.isExplosive);
     
     const getClassName = (): string => {
         return "grid-square" +
-            (isUncovered ? "" : " is-hidden") +
+            (revealed ? "" : " is-hidden") +
             (isExplosive ? " is-mine" : "") +
             (isFlagged ? " is-flag" : "");
     }
 
     const getValue = () => {
-        if (!isUncovered) return isFlagged ? "🚩" : null;
+        if (!revealed) return isFlagged ? "🚩" : null;
         if (isExplosive) return "💣";
         if (neighbour === 0) return null;
         return neighbour;
@@ -82,7 +82,7 @@ const Grid = (props: {
                     y: j,
                     isExplosive: false,
                     neighbour: 0,
-                    isUncovered: false,
+                    revealed: false,
                     isEmpty: false,
                     isFlagged: false,
                 };
@@ -152,7 +152,7 @@ const Grid = (props: {
         return (data);
     };
 
-    const nearbyMinesCount = (index: any[]): Number => {
+    const nearbyMinesCount = (index: any[]): number => {
         let i = index[0];
         let j = index[1];
         return (props.state.gridData && props.state.gridData.length > 0) 
@@ -204,7 +204,7 @@ const Grid = (props: {
         let hiddenSquares: any[] = [];
         data.map(datarow => {
             datarow.map((dataitem) => {
-                if (!dataitem.isUncovered)  hiddenSquares.push(dataitem);
+                if (!dataitem.revealed)  hiddenSquares.push(dataitem);
             });
         });
         return hiddenSquares;
@@ -213,7 +213,7 @@ const Grid = (props: {
     const revealGrid = () => {
         let updatedData = state.gridData;
         updatedData.map((datarow) => {
-            datarow.map((dataitem) => dataitem.isUncovered = true);
+            datarow.map((dataitem) => dataitem.revealed = true);
         });
         props.onStateChange({
             gridData: updatedData
@@ -222,8 +222,8 @@ const Grid = (props: {
 
     const revealEmpty = (x, y, data) => {
         traverseGrid(x, y, data).map(value => {
-            if (!value.isFlagged && !value.isUncovered && (value.isEmpty || !value.isExplosive)) {
-                data[value.x][value.y].isUncovered = true;
+            if (!value.isFlagged && !value.revealed && (value.isEmpty || !value.isExplosive)) {
+                data[value.x][value.y].revealed = true;
                 if (value.isEmpty) revealEmpty(value.x, value.y, data);
             }
         });
@@ -252,7 +252,7 @@ const Grid = (props: {
     const _handleGridSquareClick = (index) => {
         let x = index[0];
         let y = index[1];
-        if (state.gameOver || state.gameWon || state.gridData[x][y].isUncovered || state.gridData[x][y].isFlagged) return null; // state.revealed.includes(index)
+        if (state.gameOver || state.gameWon || state.gridData[x][y].revealed || state.gridData[x][y].isFlagged) return null; // state.revealed.includes(index)
         if (state.gridData[x][y].isExplosive) { // state.mineLocations.has(index))
             props.onStateChange({
                 gameState: "Game over",
@@ -263,7 +263,7 @@ const Grid = (props: {
         }
         let updatedData = state.gridData;
         updatedData[x][y].isFlagged = false;
-        updatedData[x][y].isUncovered = true;
+        updatedData[x][y].revealed = true;
         // else { revealSquare(index);
         if (updatedData[x][y].isEmpty) updatedData = revealEmpty(x, y, updatedData);
         if (determineHiddenSquares(updatedData).length === state.minesCount) {
@@ -286,7 +286,7 @@ const Grid = (props: {
         let y = index[1];
         let updatedData = state.gridData;
         let mines = state.minesCount;
-        if (updatedData[x][y].isUncovered) return;
+        if (updatedData[x][y].revealed) return;
         if (updatedData[x][y].isFlagged) {
             updatedData[x][y].isFlagged = false;
             mines++;
@@ -312,22 +312,26 @@ const Grid = (props: {
         });
     };
 
-    const generateKey = (index: any[]) => 
-        index[0] * props.state.width + index[1];
+    const generateKey = (index: any[]) => index[0] * props.state.width + index[1];
 
     const isFlagged = (index: any[]) => 
-        props.state && props.state.gridData && props.state.gridData.length > 0 ? props.state.gridData[index[0]][index[1]].isFlagged : false;
-
-    const isNeighbour = (index: any[]) => 
-        props.state && props.state.gridData && props.state.gridData.length > 0 ? props.state.gridData[index[0]][index[1]].isFlagged : false;
-
-    const isUncovered = (index: any[]) => 
         props.state && props.state.gridData && props.state.gridData.length > 0 
-        && props.state.gridData[index[0]][index[1]].isRevealed ? props.state.gridData[index[0]][index[1]].isRevealed.includes(index) : false;
+        ? props.state.gridData[index[0]][index[1]].isFlagged 
+        : false;
+
+    const isNeighbour = (index: any[]) => nearbyMinesCount([index[0], index[1]]);
+
+    const revealed = (index: any[]) => 
+        props.state && props.state.gridData && props.state.gridData.length > 0 
+            && props.state.revealed 
+            ? props.state.revealed.includes(index)
+            : false;
 
     const isExplosive = (index: any[]) => 
         props.state && props.state.gridData && props.state.gridData.length > 0 
-        && props.state.gridData[index[0]][index[1]].mineLocations ? props.state.gridData[index[0]][index[1]].mineLocations.has(index) : false;
+            && props.state.mineLocations 
+            ? props.state.mineLocations.has(index)
+            : false;
 
     return (
         <div id="minefield" className="minefield" style={{ gridTemplateColumns: `repeat(${props.state.width}, 1fr)` }}>
@@ -342,8 +346,8 @@ const Grid = (props: {
                             contextMenu={(e) => _handleContextMenu(e, [w_index, h_index])}
                             isExplosive={isExplosive([w_index, h_index])}
                             nearbyMinesCount={nearbyMinesCount([w_index, h_index])}
-                            neighbour={isNeighbour([w_index, h_index])}
-                            isUncovered={isUncovered([w_index, h_index])}
+                            neighbour={isNeighbour([w_index, h_index])} // ?
+                            revealed={revealed([w_index, h_index])}
                         /> 
                     )
                 })
