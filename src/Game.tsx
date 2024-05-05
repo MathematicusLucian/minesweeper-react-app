@@ -6,7 +6,7 @@ type Seed = [width: number, height: number, minesCount: 0]; //mineLocations: Set
 const gridDataInit: any[] = [];
 const INITIAL_STATE = {
     gameOver: false,
-    gameState: "Loading . . .",
+    gameState: "Please enter {width of grid, height, number of mines}, e.g. {3,3,1}:",
     gameWon: false,
     gridData: gridDataInit,
     height: 0,
@@ -337,7 +337,6 @@ const Grid = (props: {
     return (
         <div className="game-area">
             <div className="game-info">
-                <h1 className="info">{state.gameState}</h1>
                 <span className="info">Grid: {state.height} x {state.width}</span>
                 <span className="info">Mines remaining: {state.minesFoundCount}</span>
             </div>
@@ -438,12 +437,12 @@ function Game(props) {
 
     return (
         <div className="game">
+            <h1 className="info">{state.gameState}</h1>
             <GameSeedInput 
                 state={state} 
                 defaultValue={"3,3,1"}
                 onStateChange={onStateChange}
             />
-            {state.height}
             <Grid 
                 state={state}
                 onStateChange={onStateChange}
