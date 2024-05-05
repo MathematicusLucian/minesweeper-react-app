@@ -104,8 +104,15 @@ body {
   outline: none;
 }
 
-#minesweeper-main .is-hidden {
+.overlay, #minesweeper-main .is-hidden {
   background: #333333;
+}
+
+.overlay {
+  z-index: 9999;
+  position: relative;
+  width: 43px;
+  height: 43px;
 }
 
 #minesweeper-main .is-flag,

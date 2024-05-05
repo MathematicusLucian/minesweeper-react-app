@@ -37,27 +37,36 @@ const GridSquare = (props: GridSquareProps) => {
     const {contextMenu, index, isExplosive, isFlagged, revealed, neighbour, onClick} = props;
     
     const getClassName = (): string => {
-        return "grid-square" +
+        return "grid-square mine " +
             (revealed ? "" : " is-hidden") +
-            (isExplosive ? " is-mine" : "") +
+            (isExplosive ? " is-mine live" : "") +
             (isFlagged ? " is-flag" : "");
     }
 
     const getValue = () => {
-        console.log(index, revealed, isExplosive, neighbour);
         if (!revealed) return isFlagged ? "🚩" : null;
-        if (isExplosive) return "💣";
-        if (neighbour === 0) return null;
-        return neighbour;
+        return isExplosive ? "💥" : neighbour === 0 ? null : neighbour;
     };
 
     return (
         <div
-            onClick={() => {onClick(index)}}
-            className={getClassName()}
-            onContextMenu={contextMenu}
+          id={`mine-${index}`}
+          className={getClassName()}
+          onClick={() => {
+            onClick(index);
+          }}
+          onContextMenu={contextMenu}
         >
+          <div
+            id={`mine-overlay-${index}`}
+            className="overlay"
+            style={{
+              display: revealed ? "none" : undefined,
+            }}
+          />
+          <span id={`mine-nearby-count-${index}`} className="nearby-count">
             {getValue()}
+          </span> 
         </div>
     );
 }
@@ -345,10 +354,11 @@ const Grid = (props: {
             ? props.state.mineLocations.has(index)
             : false;
 
-    console.log(props.state.mineLocations);
-
     return (
-        <div id="minefield" className="minefield" style={{ width: (props.state.width * 47)+'px', gridTemplateColumns: `repeat(${props.state.width}, 1fr)` }}>
+        <div 
+            id="minefield" className="minefield" 
+            style={{ width: (props.state.width * 47)+'px', gridTemplateColumns: `repeat(${props.state.width}, 1fr)` }}
+        >
             {Array.from({ length: props.state.width}, (_, w_index) => 
                 Array.from({ length: props.state.height }, (_, h_index) => {     
                     return (
@@ -394,7 +404,7 @@ const GameSeedInput = (props: GameSeedProps) => {
         return [
             Number(width),
             Number(height),
-            Number(mineIndices) // new Set<number>(mineIndices.map(Number)),
+            Number(mineIndices)
         ] as Seed;
     };
 
