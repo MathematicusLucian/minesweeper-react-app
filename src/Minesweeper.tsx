@@ -354,6 +354,25 @@ const Grid = (props: {
             ? props.state.mineLocations.has(index)
             : false;
 
+    // const mines = React.useMemo(() => {
+    //     let result = [] as React.ReactNode[];
+    //     for (let i = 0; i < height * width; i++) {
+    //       result.push(
+    //         <GridSquare
+    //           index={i}
+    //           key={i}
+    //           onClick={(_: number) => {
+    //             throw new Error("Function not implemented.");
+    //           }}
+    //           isExplosive={false}
+    //           uncovered={false}
+    //           nearbyMinesCount={0}
+    //         />
+    //       );
+    //     }
+    //     return result;
+    //   }, [height, width]);
+
     return (
         <div 
             id="minefield" className="minefield" 
